@@ -81,7 +81,7 @@
                     ws.onopen = function () {
                         // Web Socket 已连接上，使用 send() 方法发送数据
                         ws.send("Trigger async");
-                        interval = setInterval(play, onnRenderMsTime);
+                        interval = setInterval(play, onnRenderMsTime); //100ms
                     };
 
                     ws.onmessage = function (evt) {
@@ -113,6 +113,7 @@
 
                     ws.onclose = function () {
                         // 关闭 websocket
+                        clearInterval(interval);
                         alert("连接已关闭...");
                     };
                 }
@@ -130,7 +131,7 @@
         function play() {
             var samples = new Int32Array(0);
 
-            let frameCount = onnRenderMsTime * 48; //200ms
+            let frameCount = onnRenderMsTime * 48; //100ms
             var int32len = frameCount * 2;
 
             if (audioCacheArray.length > int32len) {
@@ -187,8 +188,6 @@
             source.onended = () => {
                 //console.log("Audio play finished.");
             };
-
-
         }
 
         function arrayBufferToWav(arrayBuffer, bitsPerSample, sampleRate, numChannels) {
