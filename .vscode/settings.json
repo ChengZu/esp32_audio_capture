@@ -31,6 +31,8 @@
     "span": "c",
     "esp_eth.h": "c",
     "compare": "c",
-    "esp_check.h": "c"
+    "esp_check.h": "c",
+    "stdint.h": "c",
+    "esp_log.h": "c"
   }
 }

@@ -4,6 +4,7 @@
 
 extern void softap_app_main(void);
 extern void station_app_main(void);
+void reset_app_main(void);
 extern void i2s_app_main(void);
 extern void htpp_server_app_main(void);
 
@@ -68,4 +69,5 @@ void app_main(void)
     
     htpp_server_app_main();
     i2s_app_main();
+    reset_app_main();
 }
