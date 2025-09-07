@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="=zh">
+<header class="header">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>易玩音频采集</title>
+    <link rel="stylesheet" href="styles.css">
+    <nav class="nav" role="navigation">
+        <ul>
+            <li> <a href="index.html" data-hover="仪表盘">仪表盘</a> </li>
+            <li> <a href="connect-wifi.html" data-hover="连接wifi">连接wifi</a> </li>
+            <li class="active"> <a href="play-audio.html" data-hover="播放音频">播放音频</a></li>
+            <li> <a href="reset.html" data-hover="重置设备">重置设备</a> </li>
+        </ul>
+    </nav>
+</header>
+
+<body>
+    <div>
+        服务器IP：<input id="server_ip" type="text" value="">
+    </div>
+    <div>
+        <div style="float:left;">
+            <button id="play" type="button" onclick="start()">播放</button>
+        </div>
+        <div style="float:left">
+            录音：<input id="record_audio" type="checkbox" name="record_audio">
+        </div>
+        <div style="float:left">
+            <button id="record_download" type="button" style="display:none;" onclick="downloadAudio()">下载</button>
+        </div>
+    </div>
+
+
+    <script>
+        let audioCtx;
+        // Stereo
+        let channels = 2;
+        var ws;
+        var record_audio = false;
+        var audioArray = new Uint8Array();
+        var audioCacheArray = new Int32Array();
+        var interval;
+        var frame = 0;
+        var onnRenderMsTime = 100;
+        window.onload = function () {
+            var domainName = window.location.hostname;
+            document.getElementById("server_ip").value = domainName;
+            document.getElementById("record_download").disabled = true;
+
+            let checkbox = document.querySelector('#record_audio');
+            checkbox.addEventListener('change', function () {
+                record_audio = this.checked;
+                if (this.checked) {
+                    document.getElementById("record_download").style.display = "block";
+                } else {
+                    document.getElementById("record_download").style.display = "none";
+                    audioArray = new Uint8Array();
+                }
+            });
+        }
+
+        function init() {
+            audioCtx = new AudioContext();
+        }
+
+        function start() {
+            var ip = document.getElementById("server_ip").value;
+            record_audio = document.getElementById('record_audio').checked;
+            if (ip.length == 0) {
+                alert("No ip input!");
+            } else {
+                document.getElementById("server_ip").disabled = true;
+                document.getElementById("play").disabled = true;
+                document.getElementById("record_download").disabled = false;
+
+                if ("WebSocket" in window) {
+                    // 打开一个 web socket
+                    ws = new WebSocket("ws://" + ip + ":80/audio");
+
+                    ws.onopen = function () {
+                        // Web Socket 已连接上，使用 send() 方法发送数据
+                        ws.send("Trigger async");
+                        interval = setInterval(play, onnRenderMsTime);
+                    };
+
+                    ws.onmessage = function (evt) {
+                        var reader = new FileReader();
+                        reader.onload = function (event) {
+                            var buffer = event.target.result;
+                            var int32View = new Int32Array(buffer);
+                            if (int32View.length >= 4800) {
+                                console.log("Frame: " + frame + " length: " + int32View.length + ", data cache full!");
+                            }
+
+                            var mergedArray1 = new Int32Array(audioCacheArray.length + int32View.length);
+                            mergedArray1.set(audioCacheArray); // 复制array1到mergedArray
+                            mergedArray1.set(int32View, audioCacheArray.length);
+                            audioCacheArray = mergedArray1;
+
+                            if (record_audio) {
+                                var uint8View = new Uint8Array(buffer); // Uint8Array视图
+                                var mergedArray2 = new Uint8Array(audioArray.length + uint8View.length);
+                                mergedArray2.set(audioArray); // 复制array1到mergedArray
+                                mergedArray2.set(uint8View, audioArray.length);
+                                audioArray = mergedArray2;
+                            }
+                            frame += 1;
+                        };
+                        reader.readAsArrayBuffer(evt.data);
+                        //ws.send("Trigger async");
+                    };
+
+                    ws.onclose = function () {
+                        // 关闭 websocket
+                        alert("连接已关闭...");
+                    };
+                }
+                else {
+                    // 浏览器不支持 WebSocket
+                    alert("您的浏览器不支持 WebSocket!");
+                }
+            }
+        }
+
+        function intToFloatSample(value) {
+            return value / 2147483647.0; // from -2147483647.0..2147483647.0 to -1..1 range
+        }
+
+        function play() {
+            var samples = new Int32Array(0);
+
+            let frameCount = onnRenderMsTime * 48; //200ms
+            var int32len = frameCount * 2;
+
+            if (audioCacheArray.length > int32len) {
+                var part1 = audioCacheArray.slice(0, int32len); // [1, 2, 3, 4]
+                var part2 = audioCacheArray.slice(int32len);    // [5, 6, 7, 8]
+                samples = part1;
+                audioCacheArray = part2;
+            } else if (audioCacheArray.length == int32len) {
+                samples = audioCacheArray;
+                audioCacheArray = new Int32Array(0);
+            } else if (audioCacheArray.length > 0 && audioCacheArray.length < int32len) {
+                samples = audioCacheArray;
+                audioCacheArray = new Int32Array(0);
+                frameCount = Math.floor(samples.length / 2);
+                console.log(frameCount + " frameCount less " + onnRenderMsTime + "ms(" + onnRenderMsTime * 48 + ")");
+            }
+
+            if (samples.length == 0) {
+                console.log("No audio data to play!");
+                return;
+            }
+
+            if (!audioCtx) {
+                init();
+            }
+
+            const buffer = new AudioBuffer({
+                numberOfChannels: channels,
+                length: frameCount,
+                sampleRate: audioCtx.sampleRate,
+            });
+
+            var channelLeft = buffer.getChannelData(0);
+            var channelRight = buffer.getChannelData(1);
+            // Convert from interleaved buffer format to planar buffer
+            // by writing right into appropriate channel buffers
+            var j = 0;
+            for (var i = 0; i < samples.length; i += 2) {
+                channelLeft[j] = intToFloatSample(samples[i]);
+                channelRight[j] = intToFloatSample(samples[i + 1]);
+                j++;
+            }
+
+            // Get an AudioBufferSourceNode.
+            // This is the AudioNode to use when we want to play an AudioBuffer
+            const source = audioCtx.createBufferSource();
+            // Set the buffer in the AudioBufferSourceNode
+            source.buffer = buffer;
+            // Connect the AudioBufferSourceNode to the
+            // destination so we can hear the sound
+            source.connect(audioCtx.destination);
+            // start the source playing
+            source.start();
+            source.onended = () => {
+                //console.log("Audio play finished.");
+            };
+
+
+        }
+
+        function arrayBufferToWav(arrayBuffer, bitsPerSample, sampleRate, numChannels) {
+            const wavHeader = new Uint8Array(44);
+
+            // 设置文件类型为Wav
+            wavHeader.set([82, 73, 70, 70], 0); // RIFF
+            // 设置文件大小
+            var fileSize = 36 + arrayBuffer.byteLength;
+            wavHeader.set([(fileSize & 255), (fileSize >> 8) & 255, (fileSize >> 16) & 255, (fileSize >> 24) & 255], 4); // File size
+            // 设置文件格式为Wav
+            wavHeader.set([87, 65, 86, 69], 8); // WAVE
+            // 设置音频格式为PCM
+            wavHeader.set([102, 109, 116, 32], 12); // fmt 
+
+            var wFormatTag = 1;     // 音频格式,WAVE_FORMAT_PCM...
+            var wBitsPerSample = bitsPerSample; // 采样位数,多为8或16或32
+            var nChannels = numChannels;      // 声道数
+            var nSamplesPerSec = sampleRate; // 采样率,通常11025,8000,22050,44100
+            var nAvgBytesPerSec = (nSamplesPerSec * nChannels * wBitsPerSample) / 8;// 每秒数据字节数 (nSamplesPerSec * nChannels * wBitsPerSample) / 8
+            var nBlockAlign = (nChannels * wBitsPerSample) / 8;    // 数据块对齐,(nChannels * wBitsPerSample) / 8
+            var cbSize = 0;         // 额外信息的大小，PCM格式会忽略该值
+
+            // WaveFormatSize
+            wavHeader.set([16, 0, 0, 0], 16); // // 格式块内容长度
+            // wFormatTag
+            wavHeader.set([1, 0], 20); // AudioFormat
+            // Num Channels 
+            wavHeader.set([(numChannels & 255), (numChannels >> 8) & 255], 22); // nChannels
+            // Sample Rate
+            wavHeader.set([(nSamplesPerSec & 255), (nSamplesPerSec >> 8) & 255, (nSamplesPerSec >> 16) & 255, (nSamplesPerSec >> 24) & 255], 24); // nSamplesPerSec
+            // nAvgBytesPerSec
+            wavHeader.set([(nAvgBytesPerSec & 255), (nAvgBytesPerSec >> 8) & 255, (nAvgBytesPerSec >> 16) & 255, (nAvgBytesPerSec >> 24) & 255], 28); // nAvgBytesPerSec
+            // nBlockAlign
+            wavHeader.set([(nBlockAlign & 255), (nBlockAlign >> 8) & 255], 32); // nBlockAlign
+            // wBitsPerSample
+            wavHeader.set([(wBitsPerSample & 255), (wBitsPerSample >> 8) & 255], 34); // wBitsPerSample
+            //Subchunk2 ID 
+            //const subChun2kid = "data";
+            wavHeader.set([100, 97, 116, 97], 36); // Subchunk2 ID
+            //data size
+            const subChunk2Size = arrayBuffer.byteLength;
+            wavHeader.set([(subChunk2Size & 255), (subChunk2Size >> 8) & 255, (subChunk2Size >> 16) & 255, (subChunk2Size >> 24) & 255], 40); // Subchunk2 Size
+
+            // 合并文件头和音频数据
+            const wavFile = new Uint8Array(wavHeader.length + arrayBuffer.byteLength);
+            wavFile.set(wavHeader);
+            wavFile.set(new Uint8Array(arrayBuffer), wavHeader.length);
+
+            return wavFile.buffer;
+        }
+        function downloadBlob(blob, fileName) {
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = fileName;
+            link.click();
+            URL.revokeObjectURL(url);
+        }
+        function downloadAudio() {
+            if (audioArray.length > 0) {
+                var samples = audioArray;
+                audioArray = new Uint8Array(); // 清空缓存
+                const wavBuffer = arrayBufferToWav(samples, 32, 48000, 2);
+                const blob = new Blob([wavBuffer], { type: 'audio/wav' });
+                downloadBlob(blob, 'recording.wav');
+            } else {
+                alert("No audio data to save!");
+            }
+        }
+    </script>
+</body>
+
+</html>

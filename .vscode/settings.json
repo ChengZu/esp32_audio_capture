@@ -1,0 +1,36 @@
+{
+  "C_Cpp.intelliSenseEngine": "default",
+  "idf.openOcdConfigs": [
+    "interface/ftdi/esp32_devkitj_v1.cfg",
+    "target/esp32s3.cfg"
+  ],
+  "idf.currentSetup": "C:\\Users\\13516\\esp\\v5.5\\esp-idf",
+  "idf.customExtraVars": {
+    "IDF_TARGET": "esp32s3"
+  },
+  "clangd.path": "C:\\Users\\13516\\.espressif\\tools\\esp-clang\\esp-19.1.2_20250312\\esp-clang\\bin\\clangd.exe",
+  "clangd.arguments": [
+    "--background-index",
+    "--query-driver=C:\\Users\\13516\\.espressif\\tools\\xtensa-esp-elf\\esp-14.2.0_20241119\\xtensa-esp-elf\\bin\\xtensa-esp32-elf-gcc.exe",
+    "--compile-commands-dir=c:\\Users\\13516\\Desktop\\i2s\\build"
+  ],
+  "idf.portWin": "COM3",
+  "files.associations": {
+    "freertos.h": "c",
+    "stdio.h": "c",
+    "queue.h": "c",
+    "math.h": "c",
+    "array": "c",
+    "format": "c",
+    "cstdint": "c",
+    "sdkconfig.h": "c",
+    "gpio.h": "c",
+    "esp_tls_crypto.h": "c",
+    "string_view": "c",
+    "initializer_list": "c",
+    "span": "c",
+    "esp_eth.h": "c",
+    "compare": "c",
+    "esp_check.h": "c"
+  }
+}

@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="=zh">
+<header class="header">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>易玩音频采集</title>
+    <link rel="stylesheet" href="styles.css">
+    <nav class="nav" role="navigation">
+        <ul>
+            <li class="active"> <a href="index.html" data-hover="仪表盘">仪表盘</a> </li>
+            <li> <a href="connect-wifi.html" data-hover="连接wifi">连接wifi</a> </li>
+            <li> <a href="play-audio.html" data-hover="播放音频">播放音频</a></li>
+            <li> <a href="reset.html" data-hover="重置设备">重置设备</a> </li>
+        </ul>
+    </nav>
+</header>
+
+<body>
+    <div id="wifi_mode">
+        信息加载中...
+    </div>
+    <div id="wifi_ssid">
+
+    </div>
+    <div id="wifi_password">
+
+    </div>
+    <div id="wifi_ip">
+
+    </div>
+    <script>
+        window.onload = function () {
+            getinfo();
+        }
+        function getinfo() {
+            var url = "./device-info.json";
+            var obj = {
+                "code": 0,
+                "msg": "get device info"
+            };
+            var jsonStr = JSON.stringify(obj);
+            var xhttp = new XMLHttpRequest();
+            xhttp.onreadystatechange = function () {
+                if (xhttp.readyState == 4) {
+                    if (xhttp.status == 200) {
+                        var obj = JSON.parse(xhttp.responseText);
+                        console.log(obj);
+                        if (obj.code == 0) {
+                            if (obj.wifi_mode == 0) {
+                                document.getElementById("wifi_mode").innerHTML = "wifi模式：Station";
+                                document.getElementById("wifi_ssid").innerHTML = "wifi名称：" + obj.wifi_ssid;
+                                document.getElementById("wifi_password").innerHTML = "wifi密码：" + obj.wifi_password;
+                                document.getElementById("wifi_ip").innerHTML = "ip：" + obj.wifi_ip;
+                            } else if (obj.wifi_mode == 1) {
+                                document.getElementById("wifi_mode").innerHTML = "wifi模式：SoftAP";
+                                document.getElementById("wifi_ip").innerHTML = "ip：" + obj.wifi_ip;
+                            }
+                        } else {
+                            alert(" Error!\n" + xhttp.responseText);
+                        }
+                    } else if (xhttp.status == 0) {
+                        alert("Server closed the connection abruptly!");
+                        location.reload()
+                    } else {
+                        alert(xhttp.status + " Error!\n" + xhttp.responseText);
+                        location.reload()
+                    }
+                }
+            };
+            xhttp.open("POST", url, true);
+            xhttp.send(jsonStr);
+        }
+    </script>
+</body>
+
+</html>

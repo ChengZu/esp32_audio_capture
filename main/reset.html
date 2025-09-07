@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="=zh">
+<header class="header">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>易玩音频采集</title>
+    <link rel="stylesheet" href="styles.css">
+    <nav class="nav" role="navigation">
+        <ul>
+            <li> <a href="index.html" data-hover="仪表盘">仪表盘</a> </li>
+            <li> <a href="connect-wifi.html" data-hover="连接wifi">连接wifi</a> </li>
+            <li> <a href="play-audio.html" data-hover="播放音频">播放音频</a></li>
+            <li class="active"> <a href="reset.html" data-hover="重置设备">重置设备</a> </li>
+        </ul>
+    </nav>
+</header>
+
+<body>
+    <div>
+        <input id="reboot" type="button" value="重启设备" onclick="reboot()">
+    </div>
+    <div>
+        <input id="reset" type="button" value="重置设备" onclick="reset()">
+    </div>
+    <script>
+
+        function reboot() {
+            document.getElementById("reboot").disabled = true;
+            document.getElementById("reset").disabled = true;
+            var url = "./reboot.json";
+            var obj = {
+                "code": 0,
+                "password": 1234
+            };
+            var jsonStr = JSON.stringify(obj);
+            var xhttp = new XMLHttpRequest();
+            xhttp.onreadystatechange = function () {
+                if (xhttp.readyState == 4) {
+                    if (xhttp.status == 200) {
+                        var obj = JSON.parse(xhttp.responseText);
+                        console.log(obj);
+                        if (obj.code == 0) {
+                            document.getElementById("reboot").disabled = false;
+                            document.getElementById("reset").disabled = false;
+                            alert("reboot successs.");
+                        } else {
+                            alert(" Error!\n" + xhttp.responseText);
+                        }
+                    } else if (xhttp.status == 0) {
+                        alert("Server closed the connection abruptly!");
+                        location.reload()
+                    } else {
+                        alert(xhttp.status + " Error!\n" + xhttp.responseText);
+                        location.reload()
+                    }
+                }
+            };
+            xhttp.open("POST", url, true);
+            xhttp.send(jsonStr);
+
+        }
+        function reset() {
+            document.getElementById("reboot").disabled = true;
+            document.getElementById("reset").disabled = true;
+            var url = "./reset.json";
+            var obj = {
+                "code": 0,
+                "password": 1234
+            };
+            var jsonStr = JSON.stringify(obj);
+            var xhttp = new XMLHttpRequest();
+            xhttp.onreadystatechange = function () {
+                if (xhttp.readyState == 4) {
+                    if (xhttp.status == 200) {
+                        var obj = JSON.parse(xhttp.responseText);
+                        console.log(obj); // 输出：John
+                        if (obj.code == 0) {
+                            document.getElementById("reboot").disabled = false;
+                            document.getElementById("reset").disabled = false;
+                            alert("reset successs.");
+                        } else {
+                            alert(" Error!\n" + xhttp.responseText);
+                        }
+                    } else if (xhttp.status == 0) {
+                        alert("Server closed the connection abruptly!");
+                        location.reload()
+                    } else {
+                        alert(xhttp.status + " Error!\n" + xhttp.responseText);
+                        location.reload()
+                    }
+                }
+            };
+            xhttp.open("POST", url, true);
+            xhttp.send(jsonStr);
+
+        }
+    </script>
+</body>
+
+</html>

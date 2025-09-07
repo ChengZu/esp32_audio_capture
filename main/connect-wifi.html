@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="=zh">
+<header class="header">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>易玩音频采集</title>
+    <link rel="stylesheet" href="styles.css">
+    <nav class="nav" role="navigation">
+        <ul>
+            <li> <a href="index.html" data-hover="仪表盘">仪表盘</a> </li>
+            <li class="active"> <a href="connect-wifi.html" data-hover="连接wifi">连接wifi</a> </li>
+            <li> <a href="play-audio.html" data-hover="播放音频">播放音频</a></li>
+            <li> <a href="reset.html" data-hover="重置设备">重置设备</a> </li>
+        </ul>
+    </nav>
+</header>
+
+<body>
+    <div>
+        wifi名称：<input id="ssid" type="text" value="">
+    </div>
+    <div>
+        wifi密码：<input id="wifi_password" type="password" value="">
+    </div>
+    <div>
+        <input id="setwifi" type="button" value="设置WiFi" onclick="updatewifi()">
+    </div>
+    <script>
+        function updatewifi() {
+            var ssid = document.getElementById("ssid").value;
+            var wifi_password = document.getElementById("wifi_password").value;
+
+            if (ssid.length == 0) {
+                alert("No ssid input!");
+            } else if (wifi_password.length == 0) {
+                alert("No wifi password input!");
+            } else {
+                document.getElementById("ssid").disabled = true;
+                document.getElementById("wifi_password").disabled = true;
+                document.getElementById("setwifi").disabled = true;
+
+                var url = "./setwifi.json";
+                var obj = {
+                    "ssid": ssid,
+                    "wifi_password": wifi_password
+                };
+                var jsonStr = JSON.stringify(obj);
+                var xhttp = new XMLHttpRequest();
+                xhttp.onreadystatechange = function () {
+                    if (xhttp.readyState == 4) {
+                        if (xhttp.status == 200) {
+                            var obj = JSON.parse(xhttp.responseText);
+                            console.log(obj);
+                            if (obj.code == 0) {
+                                document.getElementById("ssid").disabled = false;
+                                document.getElementById("wifi_password").disabled = false;
+                                document.getElementById("setwifi").disabled = false;
+                                alert("setup wifi successs.");
+                            } else {
+                                alert(" Error!\n" + xhttp.responseText);
+                            }
+                        } else if (xhttp.status == 0) {
+                            alert("Server closed the connection abruptly!");
+                            location.reload()
+                        } else {
+                            alert(xhttp.status + " Error!\n" + xhttp.responseText);
+                            location.reload()
+                        }
+                    }
+                };
+                xhttp.open("POST", url, true);
+                xhttp.send(jsonStr);
+            }
+        }
+    </script>
+</body>
+
+</html>
