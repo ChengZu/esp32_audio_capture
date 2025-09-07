@@ -10,15 +10,12 @@
             <li> <a href="index.html" data-hover="仪表盘">仪表盘</a> </li>
             <li> <a href="connect-wifi.html" data-hover="连接wifi">连接wifi</a> </li>
             <li class="active"> <a href="play-audio.html" data-hover="播放音频">播放音频</a></li>
-            <li> <a href="reset.html" data-hover="重置设备">重置设备</a> </li>
+            <li> <a href="reset.html" data-hover="设备">设备</a> </li>
         </ul>
     </nav>
 </header>
 
 <body>
-    <div>
-        服务器IP：<input id="server_ip" type="text" value="">
-    </div>
     <div>
         <div style="float:left;">
             <button id="play" type="button" onclick="start()">播放</button>
@@ -44,8 +41,6 @@
         var frame = 0;
         var onnRenderMsTime = 100;
         window.onload = function () {
-            var domainName = window.location.hostname;
-            document.getElementById("server_ip").value = domainName;
             document.getElementById("record_download").disabled = true;
 
             let checkbox = document.querySelector('#record_audio');
@@ -65,18 +60,17 @@
         }
 
         function start() {
-            var ip = document.getElementById("server_ip").value;
+            var domainName = window.location.hostname;
             record_audio = document.getElementById('record_audio').checked;
-            if (ip.length == 0) {
+            if (domainName.length == 0) {
                 alert("No ip input!");
             } else {
-                document.getElementById("server_ip").disabled = true;
                 document.getElementById("play").disabled = true;
                 document.getElementById("record_download").disabled = false;
 
                 if ("WebSocket" in window) {
                     // 打开一个 web socket
-                    ws = new WebSocket("ws://" + ip + ":80/audio");
+                    ws = new WebSocket("ws://" + domainName + ":80/audio");
 
                     ws.onopen = function () {
                         // Web Socket 已连接上，使用 send() 方法发送数据

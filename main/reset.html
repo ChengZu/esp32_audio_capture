@@ -10,12 +10,17 @@
             <li> <a href="index.html" data-hover="仪表盘">仪表盘</a> </li>
             <li> <a href="connect-wifi.html" data-hover="连接wifi">连接wifi</a> </li>
             <li> <a href="play-audio.html" data-hover="播放音频">播放音频</a></li>
-            <li class="active"> <a href="reset.html" data-hover="重置设备">重置设备</a> </li>
+            <li class="active"> <a href="reset.html" data-hover="设备">设备</a> </li>
         </ul>
     </nav>
 </header>
 
 <body>
+    <div>
+        <input id="ota_file" type="file" name="ota_file">
+        <input id="ota_file_upload" type="button" value="更新固件" onclick="ota_file_upload()">
+        <h id="percent"></h>
+    </div>
     <div>
         <input id="reboot" type="button" value="重启设备" onclick="reboot()">
     </div>
@@ -23,6 +28,75 @@
         <input id="reset" type="button" value="重置设备" onclick="reset()">
     </div>
     <script>
+        var arrayBuffer = new ArrayBuffer(0);
+        var bytesSend = 0;
+        var dataEnd = false;
+        window.onload = function () {
+            document.getElementById("ota_file_upload").disabled = true;
+            document.getElementById('ota_file').addEventListener('change', function (event) {
+                document.getElementById("ota_file").disabled = true;
+                var fileInput = document.getElementById('ota_file');
+                var file = fileInput.files[0];
+                var reader = new FileReader();
+                reader.onload = function (event) {
+                    arrayBuffer = event.target.result;
+                    document.getElementById("ota_file_upload").disabled = false;
+                };
+                reader.readAsArrayBuffer(file);
+            });
+        }
+
+        function ota_file_upload() {
+            if (arrayBuffer.byteLength == 0) {
+                alert("No file input!");
+            } else {
+                document.getElementById("ota_file_upload").disabled = true;
+
+                if ("WebSocket" in window) {
+                    // 打开一个 web socket
+                    var domainName = window.location.hostname;
+                    ws = new WebSocket("ws://" + domainName + ":80/ota");
+                    //ws.binaryType = 'arraybuffer'; // 设置接收数据的类型为 ArrayBuffer
+
+                    ws.onopen = function () {
+                        // Web Socket 已连接上，使用 send() 方法发送数据
+                        ws.send("Start upload ota");
+                    };
+
+                    ws.onmessage = function (evt) {
+                        if (evt.data != "Ota end") {
+                            if (bytesSend < arrayBuffer.byteLength) {
+                                var toSendBytes = 2048;
+                                if ((bytesSend + toSendBytes) > arrayBuffer.byteLength) {
+                                    toSendBytes = arrayBuffer.byteLength - bytesSend;
+                                }
+                                const bufferPart = arrayBuffer.slice(bytesSend, bytesSend + toSendBytes);
+                                ws.send(bufferPart);
+                                bytesSend += toSendBytes;
+                                var percent = Math.round((bytesSend / arrayBuffer.byteLength) * 100);
+                                document.getElementById("percent").innerHTML = percent + "%";
+                            } else {
+                                ws.send("Data end");
+                                bytesSend = 0;
+                                arrayBuffer = new ArrayBuffer(0);
+                            }
+                        } else {
+                            ws.close(1000, 'Normal closure');
+                            alert("OTA update successful. Rebooting...");
+                        }
+                    };
+
+                    ws.onclose = function () {
+                        // 关闭 websocket
+                        //alert("连接已关闭...");
+                    };
+                }
+                else {
+                    // 浏览器不支持 WebSocket
+                    alert("您的浏览器不支持 WebSocket!");
+                }
+            }
+        }
 
         function reboot() {
             document.getElementById("reboot").disabled = true;
