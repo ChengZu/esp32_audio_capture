@@ -27,6 +27,7 @@ GPIO17   ->   DIN     (Data Input)
 GPIO18   ->   BCK     (Bit Clock)
 3.3V     ->   VCC
 GND      ->   GND
+```
 
 ### License
 
