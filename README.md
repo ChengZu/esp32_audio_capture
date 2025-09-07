@@ -28,6 +28,6 @@ GPIO18   ->   BCK     (Bit Clock)
 3.3V     ->   VCC
 GND      ->   GND
 
-## License
+### License
 
 This project is open source and available under the MIT License.
