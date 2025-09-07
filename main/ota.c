@@ -19,9 +19,9 @@ static const char *TAG = "OTA";
 const esp_partition_t *ota_partition;
 esp_ota_handle_t ota_handle;
 
-void ota_update(uint8_t *data, size_t size)
+esp_err_t ota_update(uint8_t *data, size_t size)
 {
-    ESP_ERROR_CHECK(esp_ota_write(ota_handle, data, size));
+    return esp_ota_write(ota_handle, data, size);
 }
 
 void ota_begin(void)

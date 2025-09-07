@@ -114,7 +114,7 @@ static void reset_io_read_task(void *args)
 
 void reset_app_main(void)
 {
-    esp_rom_gpio_pad_select_gpio(GPIO_NUM_RESET);        // 选择GPIO编号，例如GPIO_NUM_5
+    esp_rom_gpio_pad_select_gpio(GPIO_NUM_RESET);        // 选择GPIO编号
     gpio_set_direction(GPIO_NUM_RESET, GPIO_MODE_INPUT); // 设置GPIO方向为输入
     xTaskCreate(reset_io_read_task, "reset_io_read_task", 4096, NULL, 5, NULL);
 }

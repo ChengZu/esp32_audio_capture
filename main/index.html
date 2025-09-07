@@ -53,6 +53,8 @@
                                 document.getElementById("wifi_ip").innerHTML = "ip：" + obj.wifi_ip;
                             } else if (obj.wifi_mode == 1) {
                                 document.getElementById("wifi_mode").innerHTML = "wifi模式：SoftAP";
+                                document.getElementById("wifi_ssid").innerHTML = "wifi名称：audio_capture";
+                                document.getElementById("wifi_password").innerHTML = "wifi密码：12345678";
                                 document.getElementById("wifi_ip").innerHTML = "ip：" + obj.wifi_ip;
                             }
                         } else {
@@ -60,7 +62,7 @@
                         }
                     } else if (xhttp.status == 0) {
                         alert("Server closed the connection abruptly!");
-                        location.reload()
+                        document.getElementById("wifi_mode").innerHTML = "信息加载失败...";
                     } else {
                         alert(xhttp.status + " Error!\n" + xhttp.responseText);
                         location.reload()

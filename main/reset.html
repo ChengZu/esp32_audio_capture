@@ -64,7 +64,7 @@
                     };
 
                     ws.onmessage = function (evt) {
-                        if (evt.data != "Ota end") {
+                        if (evt.data == "Get data" || evt.data == "Start ota") {
                             if (bytesSend < arrayBuffer.byteLength) {
                                 var toSendBytes = 2048;
                                 if ((bytesSend + toSendBytes) > arrayBuffer.byteLength) {
@@ -80,9 +80,20 @@
                                 bytesSend = 0;
                                 arrayBuffer = new ArrayBuffer(0);
                             }
-                        } else {
+                        } else if (evt.data == "Ota end") {
                             ws.close(1000, 'Normal closure');
                             alert("OTA update successful. Rebooting...");
+                            setTimeout(() => {
+                                location.reload();
+                            }, 10000);
+                        } else if (evt.data == "Ota error") {
+                            ws.send("Data stop");
+                        } else if (evt.data == "Ota stop") {
+                            bytesSend = 0;
+                            arrayBuffer = new ArrayBuffer(0);
+                            ws.close(1000, 'Normal closure');
+                            alert("OTA update failed.");
+                            location.reload();
                         }
                     };
 

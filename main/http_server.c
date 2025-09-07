@@ -47,7 +47,7 @@
 static const char *TAG = "http_server";
 extern QueueHandle_t audio_queue;
 
-extern void ota_update(uint8_t *data, size_t size);
+extern esp_err_t ota_update(uint8_t *data, size_t size);
 extern void ota_begin(void);
 extern void ota_end(void);
 
@@ -306,7 +306,7 @@ static esp_err_t ota_handler(httpd_req_t *req)
         frame = 0;
         ota_begin();
         msg = "Start ota";
-        ESP_LOGI(TAG, "Got packet with Start upload ota.");
+        ESP_LOGI(TAG, "Got packet with data: Start upload ota.");
     }
 
     if (ws_pkt.type == HTTPD_WS_TYPE_TEXT &&
@@ -314,7 +314,7 @@ static esp_err_t ota_handler(httpd_req_t *req)
     {
         frame = 0;
         msg = "Ota end";
-        ESP_LOGI(TAG, "Got packet with data end.");
+        ESP_LOGI(TAG, "Got packet with data: data end.");
         ws_pkt.payload = (uint8_t *)msg;
         ws_pkt.len = strlen(msg);
         ws_pkt.type = HTTPD_WS_TYPE_TEXT;
@@ -327,9 +327,32 @@ static esp_err_t ota_handler(httpd_req_t *req)
         ota_end();
         return ret;
     }
+
+    if (ws_pkt.type == HTTPD_WS_TYPE_TEXT &&
+        strcmp((char *)ws_pkt.payload, "Data stop") == 0)
+    {
+        frame = 0;
+        msg = "Ota stop";
+        ESP_LOGI(TAG, "Got packet with data: Data stop.");
+        ws_pkt.payload = (uint8_t *)msg;
+        ws_pkt.len = strlen(msg);
+        ws_pkt.type = HTTPD_WS_TYPE_TEXT;
+        ret = httpd_ws_send_frame(req, &ws_pkt);
+        if (ret != ESP_OK)
+        {
+            ESP_LOGE(TAG, "httpd_ws_send_frame failed with %d", ret);
+        }
+        free(buf);
+        return ret;
+    }
+
     if (frame > 0)
     {
-        ota_update(ws_pkt.payload, ws_pkt.len);
+        esp_err_t res = ota_update(ws_pkt.payload, ws_pkt.len);
+        if (res != ESP_OK)
+        {
+            msg = "Ota error";
+        }
     }
 
     ws_pkt.payload = (uint8_t *)msg;
@@ -932,7 +955,7 @@ static esp_err_t device_info_post_handler(httpd_req_t *req)
     esp_netif_t *esp_netif = esp_netif_get_handle_from_ifkey("WIFI_STA_DEF");
     if (esp_netif == NULL)
     {
-        ESP_LOGE("IP_GET", "STA netif not found");
+        ESP_LOGI("IP_GET", "STA netif not found");
     }
     else
     {
