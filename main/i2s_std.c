@@ -20,15 +20,15 @@
  * Specifically, due to the hardware limitation, the simplex rx & tx channels can't be registered on the same controllers on ESP32 and ESP32-S2,
  * and ESP32-S2 has only one I2S controller, so it can't allocate two simplex channels */
 
-#define I2S_DAC_STD_BCLK (6) // I2S bit clock io number
 #define I2S_DAC_STD_WS (4)   // I2S word select io number
 #define I2S_DAC_STD_DOUT (5) // I2S data out io number
+#define I2S_DAC_STD_BCLK (6) // I2S bit clock io number
 #define I2S_DAC_STD_DIN (-1) // I2S data in io number
 
+#define I2S_ADC_STD_DIN (16)  // I2S data in io number
 #define I2S_ADC_STD_BCLK (17) // I2S bit clock io number
 #define I2S_ADC_STD_WS (18)   // I2S word select io number
 #define I2S_ADC_STD_DOUT (-1) // I2S data out io number
-#define I2S_ADC_STD_DIN (16)  // I2S data in io number
 
 static i2s_chan_handle_t tx_chan; // I2S tx channel handler
 static i2s_chan_handle_t rx_chan; // I2S rx channel handler
