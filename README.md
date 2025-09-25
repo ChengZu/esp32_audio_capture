@@ -12,6 +12,7 @@ pcm1808采集声音，网页播放录制，pcm5102也进行播放
 - Audio Output (speakers, headphones, etc.)
 - Jumper Wires
 
+
 ### Connections
 ```
 ESP32s3  ->   PCM1808 (ADC)
@@ -22,9 +23,9 @@ GPIO6    ->   BCK     (Bit Clock)
 GND      ->   GND
 
 ESP32s3  ->   PCM5102 (DAC)
-GPIO16   ->   LCK     (Left/Right Clock)
+GPIO16   ->   BCK     (Bit Clock)
 GPIO17   ->   DIN     (Data Input)
-GPIO18   ->   BCK     (Bit Clock)
+GPIO18   ->   LCK     (Left/Right Clock)
 3.3V     ->   VCC
 GND      ->   GND
 ```
