@@ -14,7 +14,7 @@
     "--query-driver=C:\\Users\\13516\\.espressif\\tools\\xtensa-esp-elf\\esp-14.2.0_20241119\\xtensa-esp-elf\\bin\\xtensa-esp32-elf-gcc.exe",
     "--compile-commands-dir=c:\\Users\\13516\\Desktop\\i2s\\build"
   ],
-  "idf.portWin": "COM3",
+  "idf.portWin": "COM4",
   "files.associations": {
     "freertos.h": "c",
     "stdio.h": "c",

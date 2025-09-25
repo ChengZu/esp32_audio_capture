@@ -9,8 +9,8 @@
 #include "esp_check.h"
 #include "sdkconfig.h"
 
-#define GPIO_NUM_RESET (8)
-static const char *TAG = "reset_device";
+#define GPIO_NUM_RESET (7)
+static const char *TAG = "device_reset";
 int last_read_rest_time = 0;
 
 static bool reset_device()
@@ -85,36 +85,48 @@ static bool reset_device()
     }
     ESP_LOGI(TAG, "rebooting...");
     // 延迟2秒后重启
-    vTaskDelay(2000 / portTICK_PERIOD_MS);
+    vTaskDelay(10 / portTICK_PERIOD_MS);
     esp_restart(); // 触发重启
     return ESP_OK;
 }
 
 static void reset_io_read_task(void *args)
 {
+    gpio_config_t io_conf = {
+        .pin_bit_mask = (1ULL << GPIO_NUM_RESET),
+        .mode = GPIO_MODE_INPUT,
+        .pull_up_en = GPIO_PULLUP_DISABLE, // 启用上拉电阻
+        .pull_down_en = GPIO_PULLDOWN_ENABLE,
+        .intr_type = GPIO_INTR_DISABLE};
+    gpio_config(&io_conf);
+
     while (1)
     {
         int gpio_state = gpio_get_level(GPIO_NUM_RESET); // 读取GPIO状态，0为低电平，非0为高电平
         if (gpio_state == 1)
         {
-            last_read_rest_time += 500;
+            last_read_rest_time += 100;
             if (last_read_rest_time >= 3000)
             {
+                ESP_LOGI(TAG, "last_read_rest_time:%d", last_read_rest_time);
                 reset_device();
             }
         }
         else
         {
+            if (last_read_rest_time > 0 && last_read_rest_time < 3000)
+            {
+                ESP_LOGI(TAG, "key press rebooting...");
+                esp_restart(); // 触发重启
+            }
             last_read_rest_time = 0;
         }
-        vTaskDelay(pdMS_TO_TICKS(500));
+        vTaskDelay(pdMS_TO_TICKS(100));
     }
     vTaskDelete(NULL);
 }
 
 void reset_app_main(void)
 {
-    esp_rom_gpio_pad_select_gpio(GPIO_NUM_RESET);        // 选择GPIO编号
-    gpio_set_direction(GPIO_NUM_RESET, GPIO_MODE_INPUT); // 设置GPIO方向为输入
     xTaskCreate(reset_io_read_task, "reset_io_read_task", 4096, NULL, 5, NULL);
 }
