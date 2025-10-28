@@ -1,5 +1,7 @@
 #ifndef i2s__h
 #define i2s__h
+#include <stdint.h>
+#include <stdlib.h>
 
 #define CHANNELS (2)
 #define BITSPERSAMPLE (32)

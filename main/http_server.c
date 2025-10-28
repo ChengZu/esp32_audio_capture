@@ -945,7 +945,7 @@ static const httpd_uri_t reboot = {
 
 static esp_err_t device_info_post_handler(httpd_req_t *req)
 {
-    int32_t wifi_mode = 0;
+    int32_t wifi_mode = 1;
     char wifi_ssid[32] = {0};
     char wifi_password[32] = {0};
     char wifi_ip[30] = "192.168.4.1";

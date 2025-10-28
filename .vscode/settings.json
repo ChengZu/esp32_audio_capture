@@ -33,6 +33,7 @@
     "compare": "c",
     "esp_check.h": "c",
     "stdint.h": "c",
-    "esp_log.h": "c"
+    "esp_log.h": "c",
+    "nvs_flash.h": "c"
   }
 }

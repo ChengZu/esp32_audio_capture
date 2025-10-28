@@ -1,3 +1,5 @@
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 #include "nvs_flash.h"
 #include "nvs.h"
 #include "esp_log.h"
@@ -66,8 +68,13 @@ void app_main(void)
         ESP_LOGI(TAG, "Starting SoftAP mode");
         softap_app_main();
     }
-    
+
     htpp_server_app_main();
     i2s_app_main();
     reset_app_main();
+
+    while (1)
+    {
+        vTaskDelay(pdMS_TO_TICKS(1000));
+    }
 }

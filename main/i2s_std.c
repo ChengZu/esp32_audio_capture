@@ -74,59 +74,33 @@ static void i2s_read_task(void *args)
     vTaskDelete(NULL);
 }
 
-// Function to play a test tone
-static void play_test_tone(void)
+static void play_boot_music(void)
 {
-    ESP_LOGI(TAG, "Playing test tone...");
-
-    int32_t test_buffer[64 * 2]; // Doubled buffer size for stereo
-    size_t bytes_written;
-    float phase = 0.0f;
-
-    // Play a sequence of tones
-    const float frequencies[] = {440.0f, 880.0f, 1760.0f}; // A4, A5, A6
-    const int duration_ms = 1000;                          // 1 second per tone
-
-    for (int f = 0; f < 3; f++)
+    extern const unsigned char boot_wav_start[] asm("_binary_boot_wav_start");
+    extern const unsigned char boot_wav_end[] asm("_binary_boot_wav_end");
+    const size_t boot_wav_size = (boot_wav_end - boot_wav_start);
+    size_t w_bytes = 0;
+    int32_t audio[64] = {0};
+    ESP_LOGI(TAG, "Play boot music");
+    for (int i = 44; i < boot_wav_size; i += 128)
     {
-        float phase_increment = 2.0f * M_PI * frequencies[f] / 48000;
-        int samples_to_play = (48000 * duration_ms) / 1000;
-        int buffers_to_play = samples_to_play / 64;
-
-        ESP_LOGI(TAG, "Playing tone at %.1f Hz", frequencies[f]);
-
-        for (int i = 0; i < buffers_to_play; i++)
+        for (int j = 0, k = 0; j < 128; j += 2, k++)
         {
-            // Generate sine wave for both channels
-            for (int j = 0; j < 64; j++)
-            {
-                float sample = sinf(phase) * 0xffffff * 0.5f;  // 50% amplitude
-                int32_t sample_shifted = (int32_t)sample << 8; // Shift for DAC
-                test_buffer[j * 2] = sample_shifted;           // Left channel
-                test_buffer[j * 2 + 1] = sample_shifted;       // Right channel
-                phase += phase_increment;
-                if (phase >= 2.0f * M_PI)
-                {
-                    phase -= 2.0f * M_PI;
-                }
-            }
-
-            // Write to DAC
-            if (i2s_channel_write(tx_chan, test_buffer, sizeof(test_buffer), &bytes_written, 1000) == ESP_OK)
-            {
-                // printf("Write Task: i2s write %d bytes\n", w_bytes);
-            }
-            else
-            {
-                printf("Write Task: i2s write failed\n");
-            }
+            const unsigned char *bytes = boot_wav_start + i + j;
+            int16_t data = (int16_t)((bytes[1] << 8) | (bytes[0] & 0xFF));
+            audio[k] = data * 65535;
         }
-
-        // Short silence between tones
-        vTaskDelay(pdMS_TO_TICKS(200));
+        // Write to DAC
+        if (i2s_channel_write(tx_chan, (char *)audio, sizeof(audio), &w_bytes, 1000) == ESP_OK)
+        {
+            // printf("Write Task: i2s write %d bytes\n", w_bytes);
+        }
+        else
+        {
+            printf("Write Task: i2s write failed\n");
+        }
     }
-
-    ESP_LOGI(TAG, "Test tone sequence completed");
+    ESP_LOGI(TAG, "Play boot music completed");
 }
 
 static void i2s_init_std_simplex(void)
@@ -186,7 +160,7 @@ static void i2s_init_std_simplex(void)
     ESP_ERROR_CHECK(i2s_channel_enable(rx_chan));
 }
 
-void setPcm5102Options()
+void initPcm5102Options()
 {
     esp_rom_gpio_pad_select_gpio(GPIO_NUM_SCK);
     gpio_set_direction(GPIO_NUM_SCK, GPIO_MODE_OUTPUT);
@@ -206,14 +180,14 @@ void setPcm5102Options()
 
     esp_rom_gpio_pad_select_gpio(GPIO_NUM_FLT);
     gpio_set_direction(GPIO_NUM_FLT, GPIO_MODE_OUTPUT);
-    gpio_set_level(GPIO_NUM_FLT, 0); // 过滤器选择:正常延迟(低)/低延迟(高)
+    gpio_set_level(GPIO_NUM_FLT, 1); // 过滤器选择:正常延迟(低)/低延迟(高)
 }
 
 void i2s_app_main(void)
 {
+    initPcm5102Options();
     i2s_init_std_simplex();
-    setPcm5102Options();
-    play_test_tone();
+    play_boot_music();
     audio_queue = xQueueCreate(AUDIO_QUEUE_SIZE, sizeof(audio_data_t));
     xTaskCreate(i2s_read_task, "i2s_read_task", 4096, NULL, 5, NULL);
 }
